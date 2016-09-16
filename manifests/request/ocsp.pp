@@ -1,23 +1,23 @@
-# Define: letsencrypt::request::ocsp
+# Define: dehydrated::request::ocsp
 #
 # Retrieve ocsp stapling information
 #
 
-define letsencrypt::request::ocsp(
+define dehydrated::request::ocsp(
     $domain = $name
 ) {
 
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    $handler_requests_dir = $::letsencrypt::params::handler_requests_dir
+    $handler_requests_dir = $::dehydrated::params::handler_requests_dir
     $base_dir             = "${handler_requests_dir}/${domain}"
     $crt_file             = "${base_dir}/${domain}.crt"
     $crt_chain_file       = "${base_dir}/${domain}_ca.pem"
     $ocsp_file            = "${crt_file}.ocsp"
-    $letsencrypt_ocsp_request = $::letsencrypt::params::letsencrypt_ocsp_request
+    $dehydrated_ocsp_request = $::dehydrated::params::dehydrated_ocsp_request
 
     $ocsp_command = join([
-        $letsencrypt_ocsp_request,
+        $dehydrated_ocsp_request,
         $crt_file,
         $crt_chain_file,
         $ocsp_file,
@@ -47,9 +47,9 @@ define letsencrypt::request::ocsp(
         command => $ocsp_command,
         unless  => $ocsp_unless,
         onlyif  => $ocsp_onlyif,
-        user    => letsencrypt,
-        group   => letsencrypt,
-        require => File[$letsencrypt_ocsp_request],
+        user    => dehydrated,
+        group   => dehydrated,
+        require => File[$dehydrated_ocsp_request],
     }
 
     file { $ocsp_file :

@@ -1,16 +1,16 @@
-# Define: letsencrypt::request::crt
+# Define: dehydrated::request::crt
 #
 # Take certificates form facter and export a ressource
 # with the certificate content.
 #
 
-define letsencrypt::request::crt(
+define dehydrated::request::crt(
     $domain = $name
 ) {
 
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    $handler_requests_dir = $::letsencrypt::params::handler_requests_dir
+    $handler_requests_dir = $::dehydrated::params::handler_requests_dir
     $base_dir             = "${handler_requests_dir}/${domain}"
     $crt_file             = "${base_dir}/${domain}.crt"
     $ocsp_file            = "${base_dir}/${domain}.crt.ocsp"
@@ -24,7 +24,7 @@ define letsencrypt::request::crt(
     $crt_chain = file_or_empty_string($crt_chain_file)
 
     if ($crt =~ /BEGIN CERTIFICATE/) {
-        @@letsencrypt::deploy::crt { $domain :
+        @@dehydrated::deploy::crt { $domain :
             crt_content       => $crt,
             crt_chain_content => $crt_chain,
             ocsp_content      => $ocsp,

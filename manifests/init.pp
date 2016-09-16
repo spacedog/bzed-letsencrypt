@@ -1,4 +1,4 @@
-# == Class: letsencrypt
+# == Class: dehydrated
 #
 # Include this class if you would like to create
 # Certificates or on your puppetmaster to have you CSRs signed.
@@ -13,15 +13,15 @@
 #   for example ['foo.example.com fuzz.example.com', 'blub.example.com']
 #
 # [*dehydrated_git_url*]
-#   URL used to checkout the dehydrated using git.
+#   URL used to checkout dehydrated using git.
 #   Defaults to the upstream github url.
 #
 # [*channlengetype*]
-#   Challenge type to use, default is 'dns-01'. Your dehydrated
+#   Challenge type to use, default is 'dns-01'. Your dehydrated.sh
 #   hook needs to be able to handle it.
 #
 # [*hook_source*]
-#   Points to the source of the dehydrated hook you'd like to
+#   Points to the source of the dehydrated.sh hook you'd like to
 #   distribute ((as in file { ...: source => })
 #   hook_source or hook_content needs to be specified.
 #
@@ -30,21 +30,21 @@
 #   dehydrated hook.
 #   hook_source or hook_content needs to be specified.
 #
-# [*letsencrypt_host*]
-#   The host you want to run dehydrated on.
+# [*dehydrated_host*]
+#   The host you want to run dehydrated.sh on.
 #   For now it needs to be a puppetmaster, as it needs direct access
 #   to the certificates using functions in puppet.
 #
-# [*letsencrypt_ca*]
-#   The letsencrypt CA you want to use. For debugging you want to
+# [*dehydrated_ca*]
+#   The dehydrated CA you want to use. For debugging you want to
 #   set it to 'https://acme-staging.api.letsencrypt.org/directory'
 #
-# [*letsencrypt_contact_email*]
-#   E-mail to use during the letsencrypt account registration.
+# [*dehydrated_contact_email*]
+#   E-mail to use during the dehydrated account registration.
 #   If undef, no email address is being used.
 #
-# [*letsencrypt_proxy*]
-#   Proxyserver to use to connect to the letsencrypt CA
+# [*dehydrated_proxy*]
+#   Proxyserver to use to connect to the dehydrated CA
 #   for example '127.0.0.1:3128'
 #
 # [*dh_param_size*]
@@ -54,7 +54,7 @@
 #   install necessary packages, mainly git
 #
 # === Examples
-#   class { 'letsencrypt' :
+#   class { 'dehydrated' :
 #       domains     => [ 'foo.example.com', 'fuzz.example.com' ],
 #       hook_source => 'puppet:///modules/mymodule/dehydrated_hook'
 #   }
@@ -67,33 +67,32 @@
 #
 # Copyright 2016 Bernd Zeimetz
 #
-class letsencrypt (
+class dehydrated (
     $domains = [],
-    $letsencrypt_sh_git_url = 'https://github.com/lukas2511/dehydrated.git',
-    $dehydrated_git_url = $letsencrypt_sh_git_url,
+    $dehydrated_git_url = 'https://github.com/lukas2511/dehydrated.git',
     $challengetype = 'dns-01',
     $hook_source = undef,
     $hook_content = undef,
-    $letsencrypt_host = undef,
-    $letsencrypt_ca = 'https://acme-v01.api.letsencrypt.org/directory',
-    $letsencrypt_contact_email = undef,
-    $letsencrypt_proxy = undef,
+    $dehydrated_host = undef,
+    $dehydrated_ca = 'https://acme-v01.api.letsencrypt.org/directory',
+    $dehydrated_contact_email = undef,
+    $dehydrated_proxy = undef,
     $dh_param_size = 2048,
     $manage_packages = true,
 ){
 
-    require ::letsencrypt::params
-    require ::letsencrypt::setup
+    require ::dehydrated::params
+    require ::dehydrated::setup
 
 
-    $letsencrypt_real_host = pick(
-        $letsencrypt_host,
+    $dehydrated_real_host = pick(
+        $dehydrated_host,
         $::servername,
         $::puppetmaster
     )
 
-    if ($::fqdn == $letsencrypt_real_host) {
-        class { '::letsencrypt::setup::puppetmaster' :
+    if ($::fqdn == $dehydrated_real_host) {
+        class { '::dehydrated::setup::puppetmaster' :
             manage_packages => $manage_packages,
         }
 
@@ -102,24 +101,23 @@ class letsencrypt (
                 loglevel => err,
             }
         } else {
-            class { '::letsencrypt::request::handler' :
-                dehydrated_git_url        => $dehydrated_git_url,
-                letsencrypt_ca            => $letsencrypt_ca,
+                dehydrated_git_url    => $dehydrated_git_url,
+                dehydrated_ca            => $dehydrated_ca,
                 hook_source               => $hook_source,
                 hook_content              => $hook_content,
-                letsencrypt_contact_email => $letsencrypt_contact_email,
-                letsencrypt_proxy         => $letsencrypt_proxy,
+                dehydrated_contact_email => $dehydrated_contact_email,
+                dehydrated_proxy         => $dehydrated_proxy,
             }
         }
-        if ($::letsencrypt_crts and $::letsencrypt_crts != '') {
-            $letsencrypt_crts_array = split($::letsencrypt_crts, ',')
-            ::letsencrypt::request::crt { $letsencrypt_crts_array : }
+        if ($::dehydrated_crts and $::dehydrated_crts != '') {
+            $dehydrated_crts_array = split($::dehydrated_crts, ',')
+            ::dehydrated::request::crt { $dehydrated_crts_array : }
         }
     }
 
 
-    ::letsencrypt::certificate { $domains :
-        letsencrypt_host => $letsencrypt_real_host,
+    ::dehydrated::certificate { $domains :
+        dehydrated_host => $dehydrated_real_host,
         challengetype    => $challengetype,
         dh_param_size    => $dh_param_size,
     }

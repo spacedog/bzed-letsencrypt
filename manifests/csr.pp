@@ -1,14 +1,14 @@
-# = Define: letsencrypt::csr
+# = Define: dehydrated::csr
 #
 # Create a CSR and ask to sign it.
 #
 # == Parameters:
 #
-# [*letsencrypt_host*]
+# [*dehydrated_host*]
 #   Host the certificates will be signed on
 #
 # [*challengetype*]
-#   challengetype dehydratedould use.
+#   challengetype dehydrated should use.
 #
 #  .... plus various other undocumented parameters
 #
@@ -23,8 +23,8 @@
 #
 
 
-define letsencrypt::csr(
-    $letsencrypt_host,
+define dehydrated::csr(
+    $dehydrated_host,
     $challengetype,
     $domain_list = $name,
     $country = undef,
@@ -38,9 +38,9 @@ define letsencrypt::csr(
     $force = true,
     $dh_param_size = 2048,
 ) {
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    validate_string($letsencrypt_host)
+    validate_string($dehydrated_host)
     validate_string($country)
     validate_string($organization)
     validate_string($domain_list)
@@ -51,10 +51,10 @@ define letsencrypt::csr(
     validate_string($email)
     validate_integer($dh_param_size)
 
-    $base_dir = $::letsencrypt::params::base_dir
-    $csr_dir  = $::letsencrypt::params::csr_dir
-    $key_dir  = $::letsencrypt::params::key_dir
-    $crt_dir  = $::letsencrypt::params::crt_dir
+    $base_dir = $::dehydrated::params::base_dir
+    $csr_dir  = $::dehydrated::params::csr_dir
+    $key_dir  = $::dehydrated::params::key_dir
+    $crt_dir  = $::dehydrated::params::crt_dir
 
     $domains = split($domain_list, ' ')
     $domain = $domains[0]
@@ -94,7 +94,7 @@ define letsencrypt::csr(
             File[$crt_dir]
         ],
         user    => 'root',
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         command => "/usr/bin/openssl dhparam -check ${dh_param_size} -out ${dh}",
         unless  => $create_dh_unless,
         timeout => 30*60,
@@ -103,7 +103,7 @@ define letsencrypt::csr(
     file { $dh :
         ensure  => $ensure,
         owner   => 'root',
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         mode    => '0644',
         require => Exec["create-dh-${dh}"],
     }
@@ -111,9 +111,9 @@ define letsencrypt::csr(
     file { $cnf :
         ensure  => $ensure,
         owner   => 'root',
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         mode    => '0644',
-        content => template('letsencrypt/cert.cnf.erb'),
+        content => template('dehydrated/cert.cnf.erb'),
     }
 
     ssl_pkey { $key :
@@ -135,7 +135,7 @@ define letsencrypt::csr(
         command     => "rm -f ${csr}",
         refreshonly => true,
         user        => 'root',
-        group       => 'letsencrypt',
+        group       => 'dehydrated',
         before      => X509_request[$csr],
         subscribe   => File[$cnf],
     }
@@ -143,23 +143,23 @@ define letsencrypt::csr(
     file { $key :
         ensure  => $ensure,
         owner   => 'root',
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         mode    => '0640',
         require => Ssl_pkey[$key],
     }
     file { $csr :
         ensure  => $ensure,
         owner   => 'root',
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         mode    => '0644',
         require => X509_request[$csr],
     }
 
-    $csr_content = pick_default(getvar("::letsencrypt_csr_${domain}"), '')
+    $csr_content = pick_default(getvar("::dehydrated_csr_${domain}"), '')
     if ($csr_content =~ /CERTIFICATE REQUEST/) {
-        @@letsencrypt::request { $domain :
+        @@dehydrated::request { $domain :
             csr           => $csr_content,
-            tag           => $letsencrypt_host,
+            tag           => $dehydrated_host,
             challengetype => $challengetype,
             altnames      => $altnames,
         }

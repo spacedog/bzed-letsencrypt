@@ -1,4 +1,4 @@
-# == Class: letsencrypt::setup
+# == Class: dehydrated::setup
 #
 # setup all necessary directories and groups
 #
@@ -10,7 +10,7 @@
 #
 # Copyright 2016 Bernd Zeimetz
 #
-class letsencrypt::setup::puppetmaster (
+class dehydrated::setup::puppetmaster (
     $manage_packages = true,
 ){
 

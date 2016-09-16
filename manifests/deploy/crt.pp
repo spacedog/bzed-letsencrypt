@@ -1,4 +1,4 @@
-# = Define: letsencrypt::crt
+# = Define: dehydrated::crt
 #
 # Used as exported ressource to ship a signed CRT.
 #
@@ -24,17 +24,17 @@
 #
 
 
-define letsencrypt::deploy::crt(
+define dehydrated::deploy::crt(
     $crt_content,
     $crt_chain_content,
     $ocsp_content,
     $domain = $name
 ) {
 
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    $crt_dir                 = $::letsencrypt::params::crt_dir
-    $key_dir                 = $::letsencrypt::params::key_dir
+    $crt_dir                 = $::dehydrated::params::crt_dir
+    $key_dir                 = $::dehydrated::params::key_dir
     $crt                     = "${crt_dir}/${domain}.crt"
     $ocsp                    = "${crt_dir}/${domain}.crt.ocsp"
     $key                     = "${key_dir}/${domain}.key"
@@ -46,7 +46,7 @@ define letsencrypt::deploy::crt(
     file { $crt :
         ensure  => file,
         owner   => root,
-        group   => letsencrypt,
+        group   => dehydrated,
         content => $crt_content,
         mode    => '0644',
     }
@@ -55,7 +55,7 @@ define letsencrypt::deploy::crt(
         file { $ocsp :
             ensure  => file,
             owner   => root,
-            group   => letsencrypt,
+            group   => dehydrated,
             content => base64('decode', $ocsp_content),
             mode    => '0644',
         }
@@ -68,12 +68,12 @@ define letsencrypt::deploy::crt(
 
     concat { $crt_full_chain :
         owner => root,
-        group => letsencrypt,
+        group => dehydrated,
         mode  => '0644',
     }
     concat { $crt_full_chain_with_key :
         owner => root,
-        group => letsencrypt,
+        group => dehydrated,
         mode  => '0640',
     }
 
@@ -105,7 +105,7 @@ define letsencrypt::deploy::crt(
         file { $crt_chain :
             ensure  => file,
             owner   => root,
-            group   => letsencrypt,
+            group   => dehydrated,
             content => $crt_chain_content,
             mode    => '0644',
         }

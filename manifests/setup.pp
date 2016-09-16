@@ -1,4 +1,4 @@
-# == Class: letsencrypt::setup
+# == Class: dehydrated::setup
 #
 # setup all necessary directories and groups
 #
@@ -10,30 +10,47 @@
 #
 # Copyright 2016 Bernd Zeimetz
 #
-class letsencrypt::setup (
+class dehydrated::setup (
 ){
 
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    group { 'letsencrypt' :
+    group { 'dehydrated' :
         ensure => present,
     }
 
+    $migrate_command = join([
+        "mv ${::dehydrated::params::old_base_dir} ${::dehydrated::params::base_dir}",
+        '&&',
+        "ln -s ${::dehydrated::params::base_dir} ${::dehydrated::params::old_base_dir}",
+        '&&',
+        "find ${::dehydrated::params::base_dir} -group letsencrypt -exec chgrp dehydrated {} +"
+    ], ' ')
+
+    exec { 'migrate-old-directories' :
+        path    => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+        onlyif  => "test -d ${::dehydrated::params::old_base_dir}",
+        user    => 'root',
+        group   => 'root',
+        command => $migrate_command,
+        require => Group['dehydrated'],
+        before  => File[$::dehydrated::params::base_dir],
+    }
     File {
         ensure  => directory,
         owner   => 'root',
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         mode    => '0755',
-        require => Group['letsencrypt'],
+        require => Group['dehydrated'],
     }
 
-    file { $::letsencrypt::params::base_dir :
+    file { $::dehydrated::params::base_dir :
     }
-    file { $::letsencrypt::params::csr_dir :
+    file { $::dehydrated::params::csr_dir :
     }
-    file { $::letsencrypt::params::crt_dir :
+    file { $::dehydrated::params::crt_dir :
     }
-    file { $::letsencrypt::params::key_dir :
+    file { $::dehydrated::params::key_dir :
         mode    => '0750',
     }
 

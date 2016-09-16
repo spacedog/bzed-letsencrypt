@@ -1,4 +1,4 @@
-# = Define: letsencrypt::request
+# = Define: dehydrated::request
 #
 # Request to sign a CSR.
 #
@@ -11,7 +11,7 @@
 #   Certificate commonname / domainname.
 #
 # [*challengetype*]
-#   challengetype dehydratedould use.
+#   challengetype dehydrated should use.
 #
 #
 # === Authors
@@ -24,34 +24,34 @@
 #
 
 
-define letsencrypt::request (
+define dehydrated::request (
     $csr,
     $challengetype,
     $domain = $name,
     $altnames = undef,
 ) {
 
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    $handler_requests_dir = $::letsencrypt::params::handler_requests_dir
+    $handler_requests_dir = $::dehydrated::params::handler_requests_dir
 
     $base_dir = "${handler_requests_dir}/${domain}"
     $csr_file = "${base_dir}/${domain}.csr"
     $crt_file = "${base_dir}/${domain}.crt"
     $crt_chain_file     = "${base_dir}/${domain}_ca.pem"
-    $dehydrated     = $::letsencrypt::params::dehydrated
-    $dehydrated_dir = $::letsencrypt::params::dehydrated_dir
-    $dehydrated_hook   = $::letsencrypt::params::dehydrated_hook
-    $dehydrated_conf   = $::letsencrypt::params::dehydrated_conf
-    $letsencrypt_chain_request  = $::letsencrypt::params::letsencrypt_chain_request
+    $dehydrated     = $::dehydrated::params::dehydrated
+    $dehydrated_dir = $::dehydrated::params::dehydrated_dir
+    $dehydrated_hook   = $::dehydrated::params::dehydrated_hook
+    $dehydrated_conf   = $::dehydrated::params::dehydrated_conf
+    $dehydrated_chain_request  = $::dehydrated::params::dehydrated_chain_request
 
 
     File {
-        owner   => 'letsencrypt',
-        group   => 'letsencrypt',
+        owner   => 'dehydrated',
+        group   => 'dehydrated',
         require => [
-            User['letsencrypt'],
-            Group['letsencrypt']
+            User['dehydrated'],
+            Group['dehydrated']
         ],
     }
 
@@ -95,14 +95,14 @@ define letsencrypt::request (
     ], ' ')
 
     exec { "create-certificate-${domain}" :
-        user    => 'letsencrypt',
+        user    => 'dehydrated',
         cwd     => $dehydrated_dir,
-        group   => 'letsencrypt',
+        group   => 'dehydrated',
         unless  => $le_check_command,
         command => $le_command,
         require => [
-            User['letsencrypt'],
-            Group['letsencrypt'],
+            User['dehydrated'],
+            Group['dehydrated'],
             File[$csr_file],
             Vcsrepo[$dehydrated_dir],
             File[$dehydrated_hook],
@@ -111,19 +111,19 @@ define letsencrypt::request (
     }
 
     $get_certificate_chain_command = join([
-        $letsencrypt_chain_request,
+        $dehydrated_chain_request,
         $crt_file,
         $crt_chain_file,
     ], ' ')
     exec { "get-certificate-chain-${domain}" :
-        require     => File[$letsencrypt_chain_request],
+        require     => File[$dehydrated_chain_request],
         subscribe   => [
             Exec["create-certificate-${domain}"],
-            File[$letsencrypt_chain_request]
+            File[$dehydrated_chain_request]
         ],
         refreshonly => true,
-        user        => letsencrypt,
-        group       => letsencrypt,
+        user        => dehydrated,
+        group       => dehydrated,
         command     => $get_certificate_chain_command,
         timeout     => 5*60,
         tries       => 2,
@@ -144,7 +144,7 @@ define letsencrypt::request (
         require => Exec["create-certificate-${domain}"],
     }
 
-    ::letsencrypt::request::ocsp { $domain :
+    ::dehydrated::request::ocsp { $domain :
         require => File[$crt_file],
     }
 

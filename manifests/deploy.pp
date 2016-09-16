@@ -1,10 +1,10 @@
-# = Define: letsencrypt::deploy
+# = Define: dehydrated::deploy
 #
 # Collects signed certificates and installs them.
 #
 # == Parameters:
 #
-# [*letsencrypt_host*]
+# [*dehydrated_host*]
 #   Host the certificates were signed on
 #
 # === Authors
@@ -17,13 +17,13 @@
 #
 
 
-define letsencrypt::deploy(
-    $letsencrypt_host,
+define dehydrated::deploy(
+    $dehydrated_host,
 ) {
 
     $domains = split($name, ' ')
     $domain = $domains[0]
 
-    Letsencrypt::Deploy::Crt <<| tag == $domain and tag == $letsencrypt_host |>>
+    Letsencrypt::Deploy::Crt <<| tag == $domain and tag == $dehydrated_host |>>
 
 }

@@ -1,4 +1,4 @@
-# == Class: letsencrypt
+# == Class: dehydrated
 #
 # Include this class if you would like to create
 # Certificates or on your puppetmaster to have you CSRs signed.
@@ -7,7 +7,7 @@
 # === Parameters
 #
 # [*dehydrated_git_url*]
-#   URL used to checkout the dehydrated using git.
+#   URL used to checkout dehydrated using git.
 #   Defaults to the upstream github url.
 #
 # [*hook_source*]
@@ -30,27 +30,28 @@
 #
 
 
-class letsencrypt::request::handler(
+class dehydrated::request::handler(
     $dehydrated_git_url,
-    $letsencrypt_ca,
+    $dehydrated_ca,
     $hook_source,
     $hook_content,
-    $letsencrypt_contact_email,
-    $letsencrypt_proxy,
+    $dehydrated_contact_email,
+    $dehydrated_proxy,
 ){
 
-    require ::letsencrypt::params
+    require ::dehydrated::params
 
-    $handler_base_dir     = $::letsencrypt::params::handler_base_dir
-    $handler_requests_dir = $::letsencrypt::params::handler_requests_dir
-    $dehydrated_dir   = $::letsencrypt::params::dehydrated_dir
-    $dehydrated_hook  = $::letsencrypt::params::dehydrated_hook
-    $dehydrated_conf  = $::letsencrypt::params::dehydrated_conf
-    $letsencrypt_chain_request  = $::letsencrypt::params::letsencrypt_chain_request
-    $letsencrypt_ocsp_request   = $::letsencrypt::params::letsencrypt_ocsp_request
+    $handler_base_dir     = $::dehydrated::params::handler_base_dir
+    $handler_requests_dir = $::dehydrated::params::handler_requests_dir
+    $letsencrypt_sh_dir = $::dehydrated::params::letsencrypt_sh_dir
+    $dehydrated_dir   = $::dehydrated::params::dehydrated_dir
+    $dehydrated_hook  = $::dehydrated::params::dehydrated_hook
+    $dehydrated_conf  = $::dehydrated::params::dehydrated_conf
+    $dehydrated_chain_request  = $::dehydrated::params::dehydrated_chain_request
+    $dehydrated_ocsp_request   = $::dehydrated::params::dehydrated_ocsp_request
 
-    user { 'letsencrypt' :
-        gid        => 'letsencrypt',
+    user { 'dehydrated' :
+        gid        => 'dehydrated',
         home       => $handler_base_dir,
         shell      => '/bin/bash',
         managehome => false,
@@ -62,17 +63,36 @@ class letsencrypt::request::handler(
         group => root,
     }
 
+    $migrate_command = join([
+        "mv ${::dehydrated::params::old_handler_base_dir} ${::dehydrated::params::handler_base_dir}",
+        '&&',
+        "ln -s ${::dehydrated::params::handler_base_dir} ${::dehydrated::params::old_handler_base_dir}",
+        '&&',
+        "find ${::dehydrated::params::handler_base_dir} -group letsencrypt -exec chgrp dehydrated {} +"
+    ], ' ')
+
+    exec { 'migrate-old-directories' :
+        path    => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+        onlyif  => "test -d ${::dehydrated::params::old_handler_base_dir}",
+        user    => 'root',
+        group   => 'root',
+        command => $migrate_command,
+        require => Group['dehydrated'],
+        before  => File[$::dehydrated::params::handler_base_dir],
+    }
+
+
     file { $handler_base_dir :
         ensure => directory,
         mode   => '0755',
-        owner  => 'letsencrypt',
-        group  => 'letsencrypt',
+        owner  => 'dehydrated',
+        group  => 'dehydrated',
     }
     file { "${handler_base_dir}/.acme-challenges" :
         ensure => directory,
         mode   => '0755',
-        owner  => 'letsencrypt',
-        group  => 'letsencrypt',
+        owner  => 'dehydrated',
+        group  => 'dehydrated',
     }
     file { $handler_requests_dir :
         ensure => directory,
@@ -81,11 +101,21 @@ class letsencrypt::request::handler(
 
     file { $dehydrated_hook :
         ensure  => file,
-        group   => 'letsencrypt',
-        require => Group['letsencrypt'],
+        group   => 'dehydrated',
+        require => Group['dehydrated'],
         source  => $hook_source,
         content => $hook_content,
         mode    => '0750',
+    }
+
+    if ($letsencrypt_sh_dir =~ /.*letsencrypt\.sh/) {
+        file { $letsencrypt_sh_dir :
+            ensure  => absent,
+            force   => true,
+            recurse => true,
+        }
+    } else {
+        fail('$letsencrypt_sh_dir seems to be weid')
     }
 
     vcsrepo { $dehydrated_dir :
@@ -101,11 +131,11 @@ class letsencrypt::request::handler(
     }
 
     # handle switching CAs with different account keys.
-    if ($letsencrypt_ca =~ /.*acme-v01\.api\.letsencrypt\.org.*/) {
+    if ($dehydrated_ca =~ /.*acme-v01\.api\.dehydrated\.org.*/) {
         $private_key_name = 'private_key'
     } else {
         $_ca_domain = regsubst(
-            $letsencrypt_ca,
+            $dehydrated_ca,
             '^https?://([^/]+)/.*',
             '\1'
         )
@@ -120,25 +150,25 @@ class letsencrypt::request::handler(
     file { $dehydrated_conf :
         ensure  => file,
         owner   => root,
-        group   => letsencrypt,
+        group   => dehydrated,
         mode    => '0640',
-        content => template('letsencrypt/letsencrypt.conf.erb'),
+        content => template('dehydrated/dehydrated.conf.erb'),
     }
 
-    file { $letsencrypt_chain_request :
+    file { $dehydrated_chain_request :
         ensure  => file,
         owner   => root,
-        group   => letsencrypt,
+        group   => dehydrated,
         mode    => '0755',
-        content => template('letsencrypt/letsencrypt_get_certificate_chain.sh.erb'),
+        content => template('dehydrated/dehydrated_get_certificate_chain.sh.erb'),
     }
 
-    file { $letsencrypt_ocsp_request :
+    file { $dehydrated_ocsp_request :
         ensure  => file,
         owner   => root,
-        group   => letsencrypt,
+        group   => dehydrated,
         mode    => '0755',
-        content => template('letsencrypt/letsencrypt_get_certificate_ocsp.sh.erb'),
+        content => template('dehydrated/dehydrated_get_certificate_ocsp.sh.erb'),
     }
 
     Letsencrypt::Request<<| tag == $::fqdn |>>
