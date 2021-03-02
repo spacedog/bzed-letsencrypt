@@ -107,11 +107,6 @@ define letsencrypt::deploy::crt(
             content => $crt_chain_content,
             mode    => '0644',
         }
-        concat::fragment { "${domain}_ca" :
-            target  => $crt_full_chain,
-            content => $crt_chain_content,
-            order   => '50',
-        }
     } else {
         file { $crt_chain :
             ensure => absent,
