@@ -142,8 +142,8 @@ define letsencrypt::request (
         require => Exec["create-certificate-${domain}"],
     }
 
-    ::letsencrypt::request::ocsp { $domain :
-        require => File[$crt_file],
-    }
+    # ::letsencrypt::request::ocsp { $domain :
+    #     require => File[$crt_file],
+    # }
 
 }
